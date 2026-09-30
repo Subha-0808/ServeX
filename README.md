@@ -116,4 +116,7 @@ The initial implementation focuses on food donation listings, NGO claiming, volu
 
 FoodShare aims to provide a common platform for food donors, NGOs, and volunteers to coordinate surplus food collection and distribution. By improving communication and coordination, the platform seeks to reduce edible food wastage and make food distribution more efficient.
 
+## Git Workflow Demonstration
+
+This repository demonstrates collaborative software development using Git and GitHub.
 
