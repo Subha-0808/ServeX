@@ -120,3 +120,6 @@ FoodShare aims to provide a common platform for food donors, NGOs, and volunteer
 
 This repository demonstrates collaborative software development using Git and GitHub.
 
+## Team
+
+FoodShare is developed as a collaborative software engineering project using Git and GitHub.
