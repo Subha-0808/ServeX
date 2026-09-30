@@ -123,3 +123,7 @@ This repository demonstrates collaborative software development using Git and Gi
 ## Team
 
 FoodShare is developed as a collaborative software engineering project using Git and GitHub.
+
+## Donation Dashboard
+
+The donation dashboard provides information about available donations, claimed donations, and meals saved.
