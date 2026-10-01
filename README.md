@@ -133,3 +133,7 @@ The donation dashboard provides information about available donations, claimed d
 Food donations follow a clear status flow:
 
 Available → Claimed → Picked Up → Delivered
+
+## Collaboration Note
+
+FoodShare is developed collaboratively by the FoodShare team.
