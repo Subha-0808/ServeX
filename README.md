@@ -127,3 +127,9 @@ FoodShare is developed as a collaborative software engineering project using Git
 ## Donation Dashboard
 
 The donation dashboard provides information about available donations, claimed donations, and meals saved.
+
+## Donation Status Tracking
+
+Food donations follow a clear status flow:
+
+Available → Claimed → Picked Up → Delivered
