@@ -136,4 +136,4 @@ Available → Claimed → Picked Up → Delivered
 
 ## Collaboration Note
 
-FoodShare is developed collaboratively by the FoodShare team.
+FoodShare uses GitHub for collaborative development by team members.
