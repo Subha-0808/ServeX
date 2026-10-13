@@ -1,0 +1,241 @@
+{
+  "info": {
+    "_postman_id": "servex-foodshare-api-collection",
+    "name": "ServeX FoodShare REST API",
+    "description": "Postman API Collection for testing ServeX FoodShare surplus food redistribution backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Health & Diagnostics",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "health"]
+            }
+          }
+        },
+        {
+          "name": "Platform Live Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/stats",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Donations API (Read & Search)",
+      "item": [
+        {
+          "name": "Get All Donations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/donations",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "donations"]
+            }
+          }
+        },
+        {
+          "name": "Filter by Status (Available)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/donations?status=Available",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "donations"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Available"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by Urgency (Expiring Soon)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/donations?urgency=soon",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "donations"],
+              "query": [
+                {
+                  "key": "urgency",
+                  "value": "soon"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Single Donation by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/donations/FS-1001",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "donations", "FS-1001"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Donation Lifecycle (Create, Claim, Transit, Deliver)",
+      "item": [
+        {
+          "name": "Create Food Donation (Donor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"40 Boxes Veg Pulao and Dal\",\n  \"category\": \"Cooked Meals\",\n  \"quantity\": 40,\n  \"unit\": \"meals\",\n  \"estimatedServings\": 40,\n  \"dietary\": \"Vegetarian\",\n  \"storage\": \"Insulated Warm Containers\",\n  \"expiryDateTime\": \"2026-10-15T18:00:00.000Z\",\n  \"pickupLocation\": \"Green Park Restaurant, MG Road, Bengaluru\",\n  \"donorName\": \"Green Park Restaurant\",\n  \"donorContact\": \"+91 98765 43210\",\n  \"description\": \"Surplus warm meals from corporate lunch buffet, properly packed in individual meal boxes.\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/donations",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "donations"]
+            }
+          }
+        },
+        {
+          "name": "Claim Donation (NGO)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ngoName\": \"Hope Food Rescue NGO\",\n  \"repName\": \"Sarah Jenkins\",\n  \"notes\": \"Allocated for distribution at East Slum Children Community Kitchen\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/donations/FS-1001/claim",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "donations", "FS-1001", "claim"]
+            }
+          }
+        },
+        {
+          "name": "Mark as Picked Up (Volunteer)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"volunteerName\": \"Rahul Sharma\",\n  \"notes\": \"Picked up food containers safely with temperature monitoring bag. Moving towards NGO shelter.\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/donations/FS-1001/pickup",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "donations", "FS-1001", "pickup"]
+            }
+          }
+        },
+        {
+          "name": "Mark as Delivered (Volunteer)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Delivered safely to community coordinator Sarah Jenkins. Food served warm to 40 beneficiaries.\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/donations/FS-1001/deliver",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "donations", "FS-1001", "deliver"]
+            }
+          }
+        },
+        {
+          "name": "Cancel / Delete Donation (Admin/Donor)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/donations/FS-1001",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "donations", "FS-1001"]
+            }
+          }
+        },
+        {
+          "name": "Reset Database to Sample Data",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/donations/reset",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "donations", "reset"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -15,6 +15,165 @@
     CURRENT_ROLE: 'foodshare_active_role_v1'
   };
 
+  // =========================================================================
+  // 1.1 Backend REST API Client (Node.js & Express Integration)
+  // =========================================================================
+  const API = {
+    baseUrl: (window.location.port === '5000' || window.location.pathname.startsWith('/api'))
+      ? '/api'
+      : 'http://localhost:5000/api',
+    isOnline: false,
+
+    async checkHealth() {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const res = await fetch(`${this.baseUrl}/health`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          this.setOnline(true);
+          return true;
+        }
+      } catch (e) {
+        // Backend not reachable
+      }
+      this.setOnline(false);
+      return false;
+    },
+
+    setOnline(online) {
+      this.isOnline = online;
+      const badge = document.getElementById('apiStatusBadge');
+      const text = document.getElementById('apiStatusText');
+      if (badge && text) {
+        if (online) {
+          badge.classList.remove('offline');
+          text.textContent = 'API: Connected (Port 5000)';
+          badge.title = 'Connected to Node.js & Express REST API server';
+        } else {
+          badge.classList.add('offline');
+          text.textContent = 'API: Offline (LocalStorage Mode)';
+          badge.title = 'Backend offline, using browser LocalStorage';
+        }
+      }
+    },
+
+    async fetchDonations() {
+      try {
+        const res = await fetch(`${this.baseUrl}/donations`);
+        if (res.ok) {
+          const json = await res.json();
+          this.setOnline(true);
+          return json.data;
+        }
+      } catch (e) {
+        this.setOnline(false);
+      }
+      return null;
+    },
+
+    async createDonation(data) {
+      try {
+        const res = await fetch(`${this.baseUrl}/donations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          const json = await res.json();
+          this.setOnline(true);
+          return json.data;
+        }
+      } catch (e) {
+        this.setOnline(false);
+      }
+      return null;
+    },
+
+    async claimDonation(id, claimData) {
+      try {
+        const res = await fetch(`${this.baseUrl}/donations/${id}/claim`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(claimData)
+        });
+        if (res.ok) {
+          const json = await res.json();
+          this.setOnline(true);
+          return json.data;
+        }
+      } catch (e) {
+        this.setOnline(false);
+      }
+      return null;
+    },
+
+    async pickupDonation(id, data) {
+      try {
+        const res = await fetch(`${this.baseUrl}/donations/${id}/pickup`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data || {})
+        });
+        if (res.ok) {
+          const json = await res.json();
+          this.setOnline(true);
+          return json.data;
+        }
+      } catch (e) {
+        this.setOnline(false);
+      }
+      return null;
+    },
+
+    async deliverDonation(id, data) {
+      try {
+        const res = await fetch(`${this.baseUrl}/donations/${id}/deliver`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data || {})
+        });
+        if (res.ok) {
+          const json = await res.json();
+          this.setOnline(true);
+          return json.data;
+        }
+      } catch (e) {
+        this.setOnline(false);
+      }
+      return null;
+    },
+
+    async deleteDonation(id) {
+      try {
+        const res = await fetch(`${this.baseUrl}/donations/${id}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          this.setOnline(true);
+          return true;
+        }
+      } catch (e) {
+        this.setOnline(false);
+      }
+      return null;
+    },
+
+    async resetData() {
+      try {
+        const res = await fetch(`${this.baseUrl}/donations/reset`, { method: 'POST' });
+        if (res.ok) {
+          const json = await res.json();
+          this.setOnline(true);
+          return json.data;
+        }
+      } catch (e) {
+        this.setOnline(false);
+      }
+      return null;
+    }
+  };
+
   const DEFAULT_DONOR = {
     name: 'Green Park Restaurant',
     contactPerson: 'Chef Anand Verma',
@@ -217,18 +376,36 @@
     }
   };
 
-  function initStorage() {
+  async function initStorage() {
+    // 1. Check Backend API health
+    const isApiConnected = await API.checkHealth();
+    
+    if (isApiConnected) {
+      const serverDonations = await API.fetchDonations();
+      if (serverDonations && Array.isArray(serverDonations)) {
+        State.donations = serverDonations;
+        saveDonationsToStorage(); // keep local backup
+      }
+    } else {
+      // Fallback to browser LocalStorage
+      try {
+        const storedDonations = localStorage.getItem(STORAGE_KEYS.DONATIONS);
+        if (!storedDonations) {
+          State.donations = getSampleDonations();
+          saveDonationsToStorage();
+        } else {
+          State.donations = JSON.parse(storedDonations);
+        }
+      } catch (e) {
+        console.warn('LocalStorage access issue, using in-memory state:', e);
+        State.donations = getSampleDonations();
+      }
+    }
+
+    // Users and active role from LocalStorage
     try {
-      const storedDonations = localStorage.getItem(STORAGE_KEYS.DONATIONS);
       const storedUsers = localStorage.getItem(STORAGE_KEYS.USERS);
       const storedRole = localStorage.getItem(STORAGE_KEYS.CURRENT_ROLE);
-
-      if (!storedDonations) {
-        State.donations = getSampleDonations();
-        saveDonationsToStorage();
-      } else {
-        State.donations = JSON.parse(storedDonations);
-      }
 
       if (!storedUsers) {
         State.users = getSampleUsers();
@@ -241,8 +418,6 @@
         State.activeRole = storedRole;
       }
     } catch (e) {
-      console.warn('LocalStorage access issue, using in-memory state:', e);
-      State.donations = getSampleDonations();
       State.users = getSampleUsers();
     }
 
@@ -266,8 +441,18 @@
     }
   }
 
-  function resetSampleData() {
-    State.donations = getSampleDonations();
+  async function resetSampleData() {
+    if (API.isOnline) {
+      const resetResult = await API.resetData();
+      if (resetResult && Array.isArray(resetResult)) {
+        State.donations = resetResult;
+      } else {
+        State.donations = getSampleDonations();
+      }
+    } else {
+      State.donations = getSampleDonations();
+    }
+
     State.users = getSampleUsers();
     saveDonationsToStorage();
     saveUsersToStorage();
@@ -1003,7 +1188,7 @@
   // =========================================================================
 
   // Add Donation from Form
-  function handleAddDonationForm(e) {
+  async function handleAddDonationForm(e) {
     e.preventDefault();
 
     const form = e.target;
@@ -1099,8 +1284,16 @@
       deliveryNotes: null
     };
 
-    // Prepend to top of array
-    State.donations.unshift(newDonation);
+    if (API.isOnline) {
+      const serverCreated = await API.createDonation(newDonation);
+      if (serverCreated) {
+        State.donations.unshift(serverCreated);
+      } else {
+        State.donations.unshift(newDonation);
+      }
+    } else {
+      State.donations.unshift(newDonation);
+    }
     saveDonationsToStorage();
 
     // Reset form
@@ -1108,7 +1301,7 @@
     setDefaultExpiryTime();
 
     renderAllViews();
-    showToast(`Donation "${newDonation.title}" listed successfully with ID ${newId}!`, 'success');
+    showToast(`Donation "${newDonation.title}" listed successfully!`, 'success');
   }
 
   // Set default expiry date input to current time + 12 hours
@@ -1192,7 +1385,7 @@
     openModal('claimModal');
   }
 
-  function confirmClaim(e, donationId) {
+  async function confirmClaim(e, donationId) {
     e.preventDefault();
     const item = State.donations.find(d => d.id === donationId);
     if (!item) return;
@@ -1206,6 +1399,10 @@
     item.claimedAt = new Date().toISOString();
     item.claimNotes = `${notes} (Coordinated by ${repName})`;
 
+    if (API.isOnline) {
+      await API.claimDonation(donationId, { ngoName: item.claimedBy, repName, notes });
+    }
+
     saveDonationsToStorage();
     closeModal('claimModal');
     renderAllViews();
@@ -1214,14 +1411,18 @@
   }
 
   // Volunteer Accepts Task
-  function acceptDelivery(donationId) {
+  async function acceptDelivery(donationId) {
     const item = State.donations.find(d => d.id === donationId);
     if (!item) return;
 
     item.assignedVolunteer = DEFAULT_VOLUNTEER.name;
-    item.status = 'Picked Up'; // or assigned -> transit
+    item.status = 'Picked Up';
     item.pickedUpAt = new Date().toISOString();
     item.deliveryNotes = `Accepted by volunteer ${DEFAULT_VOLUNTEER.name}. In transit for delivery.`;
+
+    if (API.isOnline) {
+      await API.pickupDonation(donationId, { volunteerName: item.assignedVolunteer, notes: item.deliveryNotes });
+    }
 
     saveDonationsToStorage();
     renderAllViews();
@@ -1229,7 +1430,7 @@
   }
 
   // Mark Picked Up
-  function markAsPickedUp(donationId) {
+  async function markAsPickedUp(donationId) {
     const item = State.donations.find(d => d.id === donationId);
     if (!item) return;
 
@@ -1237,13 +1438,17 @@
     item.pickedUpAt = new Date().toISOString();
     item.deliveryNotes = `Picked up from ${item.donorName}. In transit to destination.`;
 
+    if (API.isOnline) {
+      await API.pickupDonation(donationId, { notes: item.deliveryNotes });
+    }
+
     saveDonationsToStorage();
     renderAllViews();
     showToast(`Donation ${item.id} status updated to Picked Up!`, 'info');
   }
 
   // Mark Delivered
-  function markAsDelivered(donationId) {
+  async function markAsDelivered(donationId) {
     const item = State.donations.find(d => d.id === donationId);
     if (!item) return;
 
@@ -1251,13 +1456,17 @@
     item.deliveredAt = new Date().toISOString();
     item.deliveryNotes = `Successfully delivered and handed over to ${item.claimedBy || 'NGO'}.`;
 
+    if (API.isOnline) {
+      await API.deliverDonation(donationId, { notes: item.deliveryNotes });
+    }
+
     saveDonationsToStorage();
     renderAllViews();
     showToast(`Great work! Donation ${item.id} marked as Delivered!`, 'success');
   }
 
   // Donor cancel donation
-  function cancelDonation(donationId) {
+  async function cancelDonation(donationId) {
     if (!confirm('Are you sure you want to cancel this surplus food listing?')) return;
 
     const item = State.donations.find(d => d.id === donationId);
@@ -1268,6 +1477,10 @@
       return;
     }
 
+    if (API.isOnline) {
+      await API.deleteDonation(donationId);
+    }
+
     State.donations = State.donations.filter(d => d.id !== donationId);
     saveDonationsToStorage();
     renderAllViews();
@@ -1275,8 +1488,12 @@
   }
 
   // Admin Prompt Delete
-  function promptDeleteDonation(donationId) {
+  async function promptDeleteDonation(donationId) {
     if (confirm(`Admin Action: Are you sure you want to permanently delete record ${donationId}?`)) {
+      if (API.isOnline) {
+        await API.deleteDonation(donationId);
+      }
+
       State.donations = State.donations.filter(d => d.id !== donationId);
       saveDonationsToStorage();
       renderAllViews();
@@ -1527,8 +1744,8 @@
   // =========================================================================
   // 14. Initialization
   // =========================================================================
-  function init() {
-    initStorage();
+  async function init() {
+    await initStorage();
     setupEventListeners();
     setDefaultExpiryTime();
 
@@ -1549,6 +1766,7 @@
 
   // Export public interface for inline event triggers
   window.FoodShareApp = {
+    API,
     switchRole,
     showDetailsModal,
     openClaimModal,
