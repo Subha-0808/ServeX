@@ -2,12 +2,173 @@
   "info": {
     "_postman_id": "servex-foodshare-api-collection",
     "name": "ServeX FoodShare REST API",
-    "description": "Postman API Collection for testing ServeX FoodShare surplus food redistribution backend.",
+    "description": "Postman API Collection for testing ServeX FoodShare surplus food redistribution backend with multi-role user support.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "1. Health & Diagnostics",
+      "name": "1. Authentication & Multi-Role Management",
+      "item": [
+        {
+          "name": "Login (Priya Nair - Volunteer & Donor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"priya.nair@foodshare.in\",\n  \"password\": \"vol123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login (FoodShare Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@foodshare.in\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Register User with Multiple Roles",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Vikram Sen\",\n  \"email\": \"vikram.sen@foodshare.in\",\n  \"phone\": \"+91 98888 77665\",\n  \"password\": \"vikram123\",\n  \"roles\": [\"Donor\", \"Volunteer\"]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Get Current Profile (Me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-user-id",
+                "value": "USR-06"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/auth/me",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Add Another Role to Existing Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "USR-06"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"NGO\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/auth/add-role",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "auth", "add-role"]
+            }
+          }
+        },
+        {
+          "name": "Switch Active Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "USR-06"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"Volunteer\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/auth/switch-role",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "auth", "switch-role"]
+            }
+          }
+        },
+        {
+          "name": "Get All Users Directory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "users"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Health & Diagnostics",
       "item": [
         {
           "name": "Health Check",
@@ -40,7 +201,7 @@
       ]
     },
     {
-      "name": "2. Donations API (Read & Search)",
+      "name": "3. Donations API (Read & Search)",
       "item": [
         {
           "name": "Get All Donations",
@@ -77,52 +238,62 @@
           }
         },
         {
-          "name": "Filter by Urgency (Expiring Soon)",
+          "name": "Filter by Category (Cooked Meals)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5000/api/donations?urgency=soon",
+              "raw": "http://localhost:5000/api/donations?category=Cooked%20Meals",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5000",
               "path": ["api", "donations"],
               "query": [
                 {
-                  "key": "urgency",
-                  "value": "soon"
+                  "key": "category",
+                  "value": "Cooked Meals"
                 }
               ]
             }
           }
         },
         {
-          "name": "Get Single Donation by ID",
+          "name": "Search Donations (biryani)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5000/api/donations/FS-1001",
+              "raw": "http://localhost:5000/api/donations?search=biryani",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5000",
-              "path": ["api", "donations", "FS-1001"]
+              "path": ["api", "donations"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "biryani"
+                }
+              ]
             }
           }
         }
       ]
     },
     {
-      "name": "3. Donation Lifecycle (Create, Claim, Transit, Deliver)",
+      "name": "4. Donation Workflow (Role-Protected)",
       "item": [
         {
-          "name": "Create Food Donation (Donor)",
+          "name": "Create Donation (Donor Role: USR-01)",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "USR-01"
               }
             ],
             "body": {
@@ -139,13 +310,17 @@
           }
         },
         {
-          "name": "Claim Donation (NGO)",
+          "name": "Claim Donation (NGO Role: USR-03)",
           "request": {
             "method": "PATCH",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "USR-03"
               }
             ],
             "body": {
@@ -162,13 +337,17 @@
           }
         },
         {
-          "name": "Mark as Picked Up (Volunteer)",
+          "name": "Mark as Picked Up (Volunteer Role: USR-05)",
           "request": {
             "method": "PATCH",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "USR-05"
               }
             ],
             "body": {
@@ -185,13 +364,17 @@
           }
         },
         {
-          "name": "Mark as Delivered (Volunteer)",
+          "name": "Mark as Delivered (Volunteer Role: USR-05)",
           "request": {
             "method": "PATCH",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-user-id",
+                "value": "USR-05"
               }
             ],
             "body": {
@@ -208,10 +391,15 @@
           }
         },
         {
-          "name": "Cancel / Delete Donation (Admin/Donor)",
+          "name": "Cancel / Delete Donation (Donor: USR-01)",
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "x-user-id",
+                "value": "USR-01"
+              }
+            ],
             "url": {
               "raw": "http://localhost:5000/api/donations/FS-1001",
               "protocol": "http",

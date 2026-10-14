@@ -1,0 +1,111 @@
+[
+  {
+    "id": "USR-01",
+    "name": "Green Park Restaurant",
+    "email": "donations@greenpark.in",
+    "phone": "+91 98765 43210",
+    "password": "donor123",
+    "roles": [
+      "Donor"
+    ],
+    "status": "Active",
+    "totalDonations": 18,
+    "createdAt": "2026-01-10T10:00:00.000Z"
+  },
+  {
+    "id": "USR-02",
+    "name": "Artisan Bakers",
+    "email": "bakery@artisan.org",
+    "phone": "+91 98222 33445",
+    "password": "donor123",
+    "roles": [
+      "Donor"
+    ],
+    "status": "Active",
+    "totalDonations": 24,
+    "createdAt": "2026-01-15T11:00:00.000Z"
+  },
+  {
+    "id": "USR-03",
+    "name": "Hope Food Rescue NGO",
+    "email": "contact@hopefood.org",
+    "phone": "+91 98111 22334",
+    "password": "ngo123",
+    "roles": [
+      "NGO"
+    ],
+    "status": "Verified",
+    "totalClaims": 32,
+    "createdAt": "2026-01-12T09:30:00.000Z"
+  },
+  {
+    "id": "USR-04",
+    "name": "Annam Shelter Foundation",
+    "email": "relief@annamshelter.in",
+    "phone": "+91 98450 11223",
+    "password": "ngo123",
+    "roles": [
+      "NGO"
+    ],
+    "status": "Verified",
+    "totalClaims": 41,
+    "createdAt": "2026-01-18T14:15:00.000Z"
+  },
+  {
+    "id": "USR-05",
+    "name": "Rahul Sharma",
+    "email": "rahul.s@foodshare.in",
+    "phone": "+91 97234 56789",
+    "password": "vol123",
+    "roles": [
+      "Volunteer"
+    ],
+    "status": "Active",
+    "completedDeliveries": 19,
+    "createdAt": "2026-02-01T08:00:00.000Z"
+  },
+  {
+    "id": "USR-06",
+    "name": "Priya Nair",
+    "email": "priya.nair@foodshare.in",
+    "phone": "+91 97890 12345",
+    "password": "vol123",
+    "roles": [
+      "Volunteer",
+      "Donor"
+    ],
+    "status": "Active",
+    "completedDeliveries": 15,
+    "totalDonations": 5,
+    "createdAt": "2026-02-10T12:00:00.000Z"
+  },
+  {
+    "id": "USR-07",
+    "name": "Kiran Mehta",
+    "email": "kiran@foodshare.in",
+    "phone": "+91 96555 12300",
+    "password": "multi123",
+    "roles": [
+      "Donor",
+      "NGO",
+      "Volunteer"
+    ],
+    "status": "Active",
+    "totalDonations": 7,
+    "totalClaims": 3,
+    "completedDeliveries": 6,
+    "createdAt": "2026-02-15T16:45:00.000Z"
+  },
+  {
+    "id": "USR-08",
+    "name": "FoodShare Administrator",
+    "email": "admin@foodshare.in",
+    "phone": "+91 99000 88776",
+    "password": "admin123",
+    "roles": [
+      "Admin"
+    ],
+    "status": "Verified",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  }
+]

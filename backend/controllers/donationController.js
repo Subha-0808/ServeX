@@ -224,6 +224,8 @@ const donationController = {
   // POST /api/donations/reset
   resetDonations(req, res) {
     try {
+      const UserModel = require('../models/userModel');
+      UserModel.reset();
       const fresh = DonationModel.reset();
       res.status(200).json({
         success: true,

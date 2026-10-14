@@ -12,7 +12,9 @@
   const STORAGE_KEYS = {
     DONATIONS: 'foodshare_donations_v1',
     USERS: 'foodshare_users_v1',
-    CURRENT_ROLE: 'foodshare_active_role_v1'
+    CURRENT_ROLE: 'foodshare_active_role_v1',
+    AUTH_USER: 'foodshare_auth_user_v1',
+    AUTH_ACTIVE_ROLE: 'foodshare_auth_active_role_v1'
   };
 
   // =========================================================================
@@ -58,6 +60,15 @@
       }
     },
 
+    getAuthHeaders() {
+      const headers = {};
+      if (State.currentUser && State.currentUser.id) {
+        headers['x-user-id'] = State.currentUser.id;
+        headers['Authorization'] = `Bearer token_${State.currentUser.id}`;
+      }
+      return headers;
+    },
+
     async fetchDonations() {
       try {
         const res = await fetch(`${this.baseUrl}/donations`);
@@ -76,7 +87,7 @@
       try {
         const res = await fetch(`${this.baseUrl}/donations`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
           body: JSON.stringify(data)
         });
         if (res.ok) {
@@ -94,7 +105,7 @@
       try {
         const res = await fetch(`${this.baseUrl}/donations/${id}/claim`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
           body: JSON.stringify(claimData)
         });
         if (res.ok) {
@@ -112,7 +123,7 @@
       try {
         const res = await fetch(`${this.baseUrl}/donations/${id}/pickup`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
           body: JSON.stringify(data || {})
         });
         if (res.ok) {
@@ -130,7 +141,7 @@
       try {
         const res = await fetch(`${this.baseUrl}/donations/${id}/deliver`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
           body: JSON.stringify(data || {})
         });
         if (res.ok) {
@@ -147,7 +158,8 @@
     async deleteDonation(id) {
       try {
         const res = await fetch(`${this.baseUrl}/donations/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: this.getAuthHeaders()
         });
         if (res.ok) {
           this.setOnline(true);
@@ -162,6 +174,77 @@
     async resetData() {
       try {
         const res = await fetch(`${this.baseUrl}/donations/reset`, { method: 'POST' });
+        if (res.ok) {
+          const json = await res.json();
+          this.setOnline(true);
+          return json.data;
+        }
+      } catch (e) {
+        this.setOnline(false);
+      }
+      return null;
+    },
+
+    async login(email, password) {
+      try {
+        const res = await fetch(`${this.baseUrl}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          this.setOnline(true);
+          return json;
+        }
+        return { success: false, message: json.message || 'Login failed' };
+      } catch (e) {
+        this.setOnline(false);
+        return null;
+      }
+    },
+
+    async register(userData) {
+      try {
+        const res = await fetch(`${this.baseUrl}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          this.setOnline(true);
+          return json;
+        }
+        return { success: false, message: json.message || 'Registration failed' };
+      } catch (e) {
+        this.setOnline(false);
+        return null;
+      }
+    },
+
+    async addRole(role) {
+      try {
+        const res = await fetch(`${this.baseUrl}/auth/add-role`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+          body: JSON.stringify({ role })
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          this.setOnline(true);
+          return json;
+        }
+        return { success: false, message: json.message || 'Error adding role' };
+      } catch (e) {
+        this.setOnline(false);
+        return null;
+      }
+    },
+
+    async fetchUsers() {
+      try {
+        const res = await fetch(`${this.baseUrl}/users`);
         if (res.ok) {
           const json = await res.json();
           this.setOnline(true);
@@ -353,12 +436,13 @@
 
   function getSampleUsers() {
     return [
-      { id: 'USR-01', name: 'Green Park Restaurant', role: 'Donor', email: 'donations@greenpark.in', phone: '+91 98765 43210', totalDonations: 18, status: 'Active' },
-      { id: 'USR-02', name: 'Artisan Bakers', role: 'Donor', email: 'bakery@artisan.org', phone: '+91 98222 33445', totalDonations: 24, status: 'Active' },
-      { id: 'USR-03', name: 'Hope Food Rescue NGO', role: 'NGO', email: 'contact@hopefood.org', phone: '+91 98111 22334', totalClaims: 32, status: 'Verified' },
-      { id: 'USR-04', name: 'Annam Shelter Foundation', role: 'NGO', email: 'relief@annamshelter.in', phone: '+91 98450 11223', totalClaims: 41, status: 'Verified' },
-      { id: 'USR-05', name: 'Rahul Sharma', role: 'Volunteer', email: 'rahul.s@foodshare.in', phone: '+91 97234 56789', completedDeliveries: 19, status: 'Active' },
-      { id: 'USR-06', name: 'Priya Nair', role: 'Volunteer', email: 'priya.nair@foodshare.in', phone: '+91 97890 12345', completedDeliveries: 15, status: 'Active' }
+      { id: 'USR-01', name: 'Green Park Restaurant', roles: ['Donor'], email: 'donations@greenpark.in', phone: '+91 98765 43210', password: 'donor123', totalDonations: 18, status: 'Active' },
+      { id: 'USR-02', name: 'Artisan Bakers', roles: ['Donor'], email: 'bakery@artisan.org', phone: '+91 98222 33445', password: 'donor123', totalDonations: 24, status: 'Active' },
+      { id: 'USR-03', name: 'Hope Food Rescue NGO', roles: ['NGO'], email: 'contact@hopefood.org', phone: '+91 98111 22334', password: 'ngo123', totalClaims: 32, status: 'Verified' },
+      { id: 'USR-04', name: 'Annam Shelter Foundation', roles: ['NGO'], email: 'relief@annamshelter.in', phone: '+91 98450 11223', password: 'ngo123', totalClaims: 41, status: 'Verified' },
+      { id: 'USR-05', name: 'Rahul Sharma', roles: ['Volunteer'], email: 'rahul.s@foodshare.in', phone: '+91 97234 56789', password: 'vol123', completedDeliveries: 19, status: 'Active' },
+      { id: 'USR-06', name: 'Priya Nair', roles: ['Volunteer', 'Donor'], email: 'priya.nair@foodshare.in', phone: '+91 97890 12345', password: 'vol123', completedDeliveries: 15, totalDonations: 5, status: 'Active' },
+      { id: 'USR-07', name: 'Kiran Mehta', roles: ['Donor', 'NGO', 'Volunteer'], email: 'kiran@foodshare.in', phone: '+91 96555 12300', password: 'multi123', totalDonations: 7, totalClaims: 3, completedDeliveries: 6, status: 'Active' }
     ];
   }
 
@@ -369,6 +453,8 @@
     donations: [],
     users: [],
     activeRole: 'home', // 'home' | 'donor' | 'ngo' | 'volunteer' | 'admin'
+    currentUser: null,        // Logged-in user object
+    currentActiveRole: null,  // The role the user is currently operating as
     filters: {
       ngo: { category: 'all', urgency: 'all', search: '' },
       donor: { status: 'all' },
@@ -402,23 +488,60 @@
       }
     }
 
-    // Users and active role from LocalStorage
+    // Users and active role
     try {
-      const storedUsers = localStorage.getItem(STORAGE_KEYS.USERS);
-      const storedRole = localStorage.getItem(STORAGE_KEYS.CURRENT_ROLE);
-
-      if (!storedUsers) {
-        State.users = getSampleUsers();
-        saveUsersToStorage();
-      } else {
-        State.users = JSON.parse(storedUsers);
+      let loadedUsers = null;
+      if (isApiConnected) {
+        const serverUsers = await API.fetchUsers();
+        if (serverUsers && Array.isArray(serverUsers) && serverUsers.length > 0) {
+          loadedUsers = serverUsers;
+        }
       }
 
+      if (!loadedUsers) {
+        const storedUsers = localStorage.getItem(STORAGE_KEYS.USERS);
+        if (storedUsers) {
+          const parsed = JSON.parse(storedUsers);
+          loadedUsers = parsed.map(u => {
+            if (!u.roles) {
+              u.roles = u.role ? [u.role] : ['Donor'];
+            }
+            return u;
+          });
+        }
+      }
+
+      if (!loadedUsers || loadedUsers.length === 0) {
+        loadedUsers = getSampleUsers();
+      }
+
+      State.users = loadedUsers;
+      saveUsersToStorage();
+
+      const storedRole = localStorage.getItem(STORAGE_KEYS.CURRENT_ROLE);
       if (storedRole && ['home', 'donor', 'ngo', 'volunteer', 'admin'].includes(storedRole)) {
         State.activeRole = storedRole;
       }
     } catch (e) {
       State.users = getSampleUsers();
+    }
+
+    // Restore session
+    try {
+      const savedAuthUser = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
+      const savedAuthRole = localStorage.getItem(STORAGE_KEYS.AUTH_ACTIVE_ROLE);
+      if (savedAuthUser) {
+        const authData = JSON.parse(savedAuthUser);
+        // Re-hydrate from stored users list to get latest data
+        const freshUser = State.users.find(u => u.id === authData.id);
+        if (freshUser) {
+          State.currentUser = freshUser;
+          State.currentActiveRole = (savedAuthRole && freshUser.roles.includes(savedAuthRole)) ? savedAuthRole : freshUser.roles[0];
+          updateHeaderUserUI();
+        }
+      }
+    } catch(e) {
+      // noop
     }
 
     // Run expiry refresh across all listings on initialization
@@ -579,8 +702,8 @@
       expired,
       mealsSaved,
       kgSaved,
-      activeNgos: State.users.filter(u => u.role === 'NGO').length,
-      activeVolunteers: State.users.filter(u => u.role === 'Volunteer').length
+      activeNgos: State.users.filter(u => (u.roles || [u.role]).includes('NGO')).length,
+      activeVolunteers: State.users.filter(u => (u.roles || [u.role]).includes('Volunteer')).length
     };
   }
 
@@ -635,6 +758,32 @@
   function switchRole(targetRole) {
     const validRoles = ['home', 'donor', 'ngo', 'volunteer', 'admin'];
     if (!validRoles.includes(targetRole)) targetRole = 'home';
+
+    // Role-based access control guard when user is logged in
+    if (State.currentUser && ['donor', 'ngo', 'volunteer', 'admin'].includes(targetRole)) {
+      const viewToRole = { donor: 'Donor', ngo: 'NGO', volunteer: 'Volunteer', admin: 'Admin' };
+      const required = viewToRole[targetRole];
+      const userRoles = State.currentUser.roles || [];
+      const isAllowed = userRoles.includes(required) || userRoles.includes('Admin');
+
+      if (!isAllowed) {
+        showToast(`Access Restricted: Your account does not hold the '${required}' role. Add it in your profile menu!`, 'warning');
+        if (State.currentActiveRole) {
+          targetRole = roleToView(State.currentActiveRole);
+        } else {
+          targetRole = 'home';
+        }
+      } else {
+        // Sync active operating role to current dashboard
+        if (['Donor', 'NGO', 'Volunteer'].includes(required)) {
+          State.currentActiveRole = required;
+          try {
+            localStorage.setItem(STORAGE_KEYS.AUTH_ACTIVE_ROLE, required);
+          } catch (e) {}
+          updateHeaderUserUI();
+        }
+      }
+    }
 
     State.activeRole = targetRole;
     try {
@@ -1015,19 +1164,23 @@
     // Users Directory Table
     const userTableBody = document.getElementById('adminUsersTableBody');
     if (userTableBody) {
-      userTableBody.innerHTML = State.users.map(u => `
-        <tr>
-          <td><strong>${escapeHtml(u.name)}</strong></td>
-          <td><span class="badge badge-category">${u.role}</span></td>
-          <td>${escapeHtml(u.email)}<br><span style="font-size:0.75rem;color:var(--text-muted);">${escapeHtml(u.phone)}</span></td>
-          <td>
-            ${u.totalDonations ? `${u.totalDonations} Donations` : ''}
-            ${u.totalClaims ? `${u.totalClaims} Claims` : ''}
-            ${u.completedDeliveries ? `${u.completedDeliveries} Deliveries` : ''}
-          </td>
-          <td><span class="badge badge-available">${u.status}</span></td>
-        </tr>
-      `).join('');
+      userTableBody.innerHTML = State.users.map(u => {
+        const roles = u.roles || (u.role ? [u.role] : []);
+        const roleBadges = roles.map(r => `<span class="badge badge-category" style="margin-right:3px;">${r}</span>`).join('');
+        return `
+          <tr>
+            <td><strong>${escapeHtml(u.name)}</strong>${State.currentUser && State.currentUser.id === u.id ? ' <span class="badge badge-available" style="font-size:0.65rem;">You</span>' : ''}</td>
+            <td>${roleBadges}</td>
+            <td>${escapeHtml(u.email)}<br><span style="font-size:0.75rem;color:var(--text-muted);">${escapeHtml(u.phone)}</span></td>
+            <td>
+              ${u.totalDonations ? `${u.totalDonations} Donations ` : ''}
+              ${u.totalClaims ? `${u.totalClaims} Claims ` : ''}
+              ${u.completedDeliveries ? `${u.completedDeliveries} Deliveries` : ''}
+            </td>
+            <td><span class="badge badge-available">${u.status}</span></td>
+          </tr>
+        `;
+      }).join('');
     }
   }
 
@@ -1748,6 +1901,8 @@
     await initStorage();
     setupEventListeners();
     setDefaultExpiryTime();
+    setupAuthEventListeners();
+    updateHeaderUserUI();
 
     // Check initial hash
     const initialHash = window.location.hash.replace('#', '');
@@ -1764,6 +1919,429 @@
     }, 60000);
   }
 
+  function setupAuthEventListeners() {
+    // Auth modal tabs
+    const tabLogin = document.getElementById('authTabLogin');
+    const tabRegister = document.getElementById('authTabRegister');
+    if (tabLogin) tabLogin.addEventListener('click', () => openAuthModal('login'));
+    if (tabRegister) tabRegister.addEventListener('click', () => openAuthModal('register'));
+
+    // Login form
+    const loginForm = document.getElementById('authLoginForm');
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+
+    // Register form
+    const registerForm = document.getElementById('authRegisterForm');
+    if (registerForm) registerForm.addEventListener('submit', handleRegister);
+
+    // Header login button
+    const loginBtn = document.getElementById('authLoginBtn');
+    if (loginBtn) loginBtn.addEventListener('click', () => openAuthModal('login'));
+
+    // Logout button
+    const logoutBtn = document.getElementById('authLogoutBtn');
+    if (logoutBtn) logoutBtn.addEventListener('click', logoutUser);
+
+    // Switch role buttons in header chip
+    document.querySelectorAll('.switch-role-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const role = btn.dataset.switchRole;
+        if (role) switchActiveRole(role);
+      });
+    });
+  }
+
+  // =========================================================================
+  // 15. Authentication & Multi-Role System
+  // =========================================================================
+
+  /** Map user's role name (Donor/NGO/Volunteer/Admin) to dashboard view key */
+  function roleToView(role) {
+    if (role === 'Donor') return 'donor';
+    if (role === 'NGO') return 'ngo';
+    if (role === 'Volunteer') return 'volunteer';
+    if (role === 'Admin') return 'admin';
+    return 'home';
+  }
+
+  /** Update the header user chip display */
+  function updateHeaderUserUI() {
+    const authChip = document.getElementById('authUserChip');
+    const loginBtn = document.getElementById('authLoginBtn');
+    const userNameEl = document.getElementById('authChipName');
+    const userRoleEl = document.getElementById('authChipRole');
+    const menuRoleLabel = document.getElementById('authMenuRoleSectionLabel');
+    const menuSwitchList = document.getElementById('authSwitchRoleList');
+    const menuDivider = document.getElementById('authRoleMenuDivider');
+
+    if (!authChip || !loginBtn) return;
+
+    if (State.currentUser) {
+      authChip.style.display = 'flex';
+      loginBtn.style.display = 'none';
+      if (userNameEl) userNameEl.textContent = State.currentUser.name;
+      if (userRoleEl) userRoleEl.textContent = State.currentActiveRole || State.currentUser.roles[0];
+
+      const userRoles = State.currentUser.roles || [];
+
+      // Update role switcher in header dropdown: only show roles assigned to user
+      if (menuSwitchList) {
+        if (userRoles.length > 1) {
+          if (menuRoleLabel) {
+            menuRoleLabel.style.display = 'block';
+            menuRoleLabel.textContent = `Switch Role (${userRoles.length} assigned)`;
+          }
+          if (menuDivider) menuDivider.style.display = 'block';
+          menuSwitchList.style.display = 'block';
+
+          menuSwitchList.querySelectorAll('.switch-role-opt').forEach(btn => {
+            const r = btn.dataset.switchRole;
+            if (userRoles.includes(r)) {
+              btn.style.display = 'flex';
+              if (r === State.currentActiveRole) {
+                btn.style.fontWeight = '700';
+                btn.style.background = 'var(--primary-50)';
+              } else {
+                btn.style.fontWeight = 'normal';
+                btn.style.background = 'transparent';
+              }
+            } else {
+              btn.style.display = 'none';
+            }
+          });
+        } else {
+          // Gracefully handle single-role users without redundant switcher
+          if (menuRoleLabel) {
+            menuRoleLabel.style.display = 'block';
+            menuRoleLabel.textContent = `Active Role: ${userRoles[0] || 'Member'}`;
+          }
+          if (menuDivider) menuDivider.style.display = 'none';
+          menuSwitchList.style.display = 'none';
+        }
+      }
+
+      // Update top navbar buttons: lock roles the user doesn't possess (Admins unlock all)
+      document.querySelectorAll('.role-btn[data-role]').forEach(btn => {
+        const r = btn.dataset.role;
+        if (r === 'home') { btn.style.display = ''; return; }
+        const viewToRole = { donor: 'Donor', ngo: 'NGO', volunteer: 'Volunteer', admin: 'Admin' };
+        const requiredRole = viewToRole[r];
+        if (requiredRole && !userRoles.includes(requiredRole) && !userRoles.includes('Admin')) {
+          btn.classList.add('role-btn-locked');
+          btn.title = `Locked: Account does not have ${requiredRole} role`;
+        } else {
+          btn.classList.remove('role-btn-locked');
+          btn.removeAttribute('title');
+        }
+      });
+    } else {
+      authChip.style.display = 'none';
+      loginBtn.style.display = '';
+      document.querySelectorAll('.role-btn[data-role]').forEach(btn => {
+        btn.classList.remove('role-btn-locked');
+        btn.removeAttribute('title');
+      });
+    }
+  }
+
+  /** Open auth modal in login or register mode */
+  function openAuthModal(mode = 'login') {
+    const modal = document.getElementById('authModal');
+    if (!modal) return;
+    const loginForm = document.getElementById('authLoginForm');
+    const registerForm = document.getElementById('authRegisterForm');
+    const tabLogin = document.getElementById('authTabLogin');
+    const tabRegister = document.getElementById('authTabRegister');
+
+    if (mode === 'register') {
+      loginForm.style.display = 'none';
+      registerForm.style.display = '';
+      tabLogin.classList.remove('active');
+      tabRegister.classList.add('active');
+    } else {
+      loginForm.style.display = '';
+      registerForm.style.display = 'none';
+      tabLogin.classList.add('active');
+      tabRegister.classList.remove('active');
+    }
+    openModal('authModal');
+  }
+
+  /** Handle login form submit */
+  async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginError');
+
+    let user = null;
+    if (API.isOnline) {
+      const res = await API.login(email, password);
+      if (res && res.success) {
+        user = res.user;
+        const exist = State.users.find(u => u.id === user.id);
+        if (exist) {
+          Object.assign(exist, user);
+        } else {
+          State.users.push(user);
+        }
+        saveUsersToStorage();
+      } else if (res && !res.success) {
+        if (errEl) errEl.textContent = res.message;
+        return;
+      }
+    }
+
+    if (!user) {
+      user = State.users.find(u => u.email.toLowerCase() === email && u.password === password);
+    }
+
+    if (!user) {
+      if (errEl) errEl.textContent = 'Invalid email or password. Try: priya.nair@foodshare.in / vol123';
+      return;
+    }
+    if (errEl) errEl.textContent = '';
+
+    // If user has multiple roles, show role chooser; else go directly
+    if (user.roles.length > 1) {
+      closeModal('authModal');
+      openRoleChooser(user);
+    } else {
+      completeLogin(user, user.roles[0]);
+      closeModal('authModal');
+    }
+  }
+
+  /** Handle register form submit */
+  async function handleRegister(e) {
+    e.preventDefault();
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim().toLowerCase();
+    const phone = document.getElementById('regPhone').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const errEl = document.getElementById('registerError');
+
+    // Collect checked roles
+    const selectedRoles = [];
+    document.querySelectorAll('.reg-role-checkbox:checked').forEach(cb => {
+      selectedRoles.push(cb.value);
+    });
+
+    if (!name || name.length < 2) { if (errEl) errEl.textContent = 'Please enter your full name.'; return; }
+    if (!email || !email.includes('@')) { if (errEl) errEl.textContent = 'Please enter a valid email.'; return; }
+    if (!password || password.length < 4) { if (errEl) errEl.textContent = 'Password must be at least 4 characters.'; return; }
+    if (selectedRoles.length === 0) { if (errEl) errEl.textContent = 'Please select at least one role.'; return; }
+
+    let newUser = null;
+    if (API.isOnline) {
+      const res = await API.register({ name, email, phone, password, roles: selectedRoles });
+      if (res && res.success) {
+        newUser = res.user;
+        State.users.push(newUser);
+        saveUsersToStorage();
+      } else if (res && !res.success) {
+        if (errEl) errEl.textContent = res.message;
+        return;
+      }
+    }
+
+    if (!newUser) {
+      if (State.users.find(u => u.email.toLowerCase() === email)) {
+        if (errEl) errEl.textContent = 'This email is already registered. Please log in.';
+        return;
+      }
+      const nextNum = State.users.length + 1;
+      newUser = {
+        id: `USR-${String(nextNum + 10).padStart(2, '0')}`,
+        name,
+        email,
+        phone: phone || 'N/A',
+        password,
+        roles: selectedRoles,
+        status: selectedRoles.includes('NGO') ? 'Pending Verification' : 'Active',
+        totalDonations: 0,
+        totalClaims: 0,
+        completedDeliveries: 0
+      };
+      State.users.push(newUser);
+      saveUsersToStorage();
+    }
+
+    if (errEl) errEl.textContent = '';
+    showToast(`Welcome to FoodShare, ${name}! Account created successfully.`, 'success');
+
+    if (selectedRoles.length > 1) {
+      closeModal('authModal');
+      openRoleChooser(newUser);
+    } else {
+      completeLogin(newUser, selectedRoles[0]);
+      closeModal('authModal');
+    }
+  }
+
+  /** Open the role chooser modal for a multi-role user */
+  function openRoleChooser(user) {
+    const modal = document.getElementById('roleChooserModal');
+    if (!modal) return;
+
+    const container = document.getElementById('roleChooserOptions');
+    const greetEl = document.getElementById('roleChooserGreeting');
+    if (greetEl) greetEl.textContent = `Welcome back, ${user.name}! You have multiple roles — choose one to start:`;
+
+    const roleConfig = {
+      Donor: { emoji: '🍲', desc: 'List surplus food donations and track their delivery status.', color: 'var(--primary-600)' },
+      NGO: { emoji: '🏢', desc: 'Browse available food donations and claim them for your beneficiaries.', color: '#0284c7' },
+      Volunteer: { emoji: '🚴', desc: 'Accept delivery tasks and update pickup/delivery progress.', color: '#7c3aed' },
+      Admin: { emoji: '🛡️', desc: 'Platform oversight, system metrics, review donations, and manage user accounts.', color: '#dc2626' }
+    };
+
+    if (container) {
+      container.innerHTML = user.roles.map(role => {
+        const cfg = roleConfig[role] || { emoji: '👤', desc: '', color: 'var(--primary-600)' };
+        return `
+          <div class="role-chooser-card" onclick="FoodShareApp.completeLogin(${JSON.stringify(user)}, '${role}')" style="border-color:${cfg.color};">
+            <div class="role-chooser-emoji">${cfg.emoji}</div>
+            <div>
+              <div class="role-chooser-name">${role}</div>
+              <div class="role-chooser-desc">${cfg.desc}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    openModal('roleChooserModal');
+    State._pendingLoginUser = user;
+  }
+
+  /** Finalize login: set state, save session, navigate to dashboard */
+  function completeLogin(user, role) {
+    if (typeof user === 'string') user = JSON.parse(user);
+    const freshUser = State.users.find(u => u.id === user.id) || user;
+
+    State.currentUser = freshUser;
+    State.currentActiveRole = role;
+    State._pendingLoginUser = null;
+
+    try {
+      localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify({ id: freshUser.id }));
+      localStorage.setItem(STORAGE_KEYS.AUTH_ACTIVE_ROLE, role);
+    } catch(e) {}
+
+    closeModal('roleChooserModal');
+    closeModal('authModal');
+    updateHeaderUserUI();
+    renderAdminView();
+
+    switchRole(roleToView(role));
+    showToast(`Logged in as ${freshUser.name} — ${role} dashboard`, 'success');
+  }
+
+  /** Switch to a different role without logging out */
+  function switchActiveRole(newRole) {
+    if (!State.currentUser) return;
+    if (!State.currentUser.roles.includes(newRole)) {
+      showToast(`Your account does not have the ${newRole} role.`, 'error');
+      return;
+    }
+    State.currentActiveRole = newRole;
+    try {
+      localStorage.setItem(STORAGE_KEYS.AUTH_ACTIVE_ROLE, newRole);
+    } catch(e) {}
+    updateHeaderUserUI();
+    switchRole(roleToView(newRole));
+    showToast(`Switched to ${newRole} dashboard`, 'success');
+  }
+
+  /** Open modal to safely add another role to existing account */
+  function openAddRoleModal() {
+    if (!State.currentUser) {
+      openAuthModal('login');
+      return;
+    }
+
+    const container = document.getElementById('addRoleOptions');
+    if (!container) return;
+
+    const allEligibleRoles = ['Donor', 'NGO', 'Volunteer'];
+    const userRoles = State.currentUser.roles || [];
+    const availableToAdd = allEligibleRoles.filter(r => !userRoles.includes(r));
+
+    const roleConfig = {
+      Donor: { emoji: '🍲', desc: 'List surplus food and track delivery from restaurants or home kitchens.', color: 'var(--primary-600)' },
+      NGO: { emoji: '🏢', desc: 'Browse available food donations and claim them for community kitchens.', color: '#0284c7' },
+      Volunteer: { emoji: '🚴', desc: 'Accept delivery tasks and transport food from donors to recipients.', color: '#7c3aed' }
+    };
+
+    if (availableToAdd.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center; padding:1.5rem; background:var(--surface-color); border-radius:12px; border:1px solid var(--border-color);">
+          <div style="font-size:2.2rem; margin-bottom:0.5rem;">🌟</div>
+          <div style="font-weight:700; color:var(--text-dark); margin-bottom:0.35rem; font-size:1.05rem;">Full Platform Access</div>
+          <div style="font-size:0.875rem; color:var(--text-muted); line-height:1.5;">Your account is already equipped with all available community roles (Donor, NGO, and Volunteer)! You can switch between your dashboards at any time from the header menu.</div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = availableToAdd.map(role => {
+        const cfg = roleConfig[role];
+        return `
+          <div class="role-chooser-card" onclick="FoodShareApp.confirmAddRole('${role}')" style="border-color:${cfg.color};">
+            <div class="role-chooser-emoji">${cfg.emoji}</div>
+            <div>
+              <div class="role-chooser-name">+ Add ${role} Role</div>
+              <div class="role-chooser-desc">${cfg.desc}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    openModal('addRoleModal');
+  }
+
+  /** Confirm adding a role to existing account */
+  async function confirmAddRole(role) {
+    if (!State.currentUser) return;
+
+    if (API.isOnline) {
+      const apiRes = await API.addRole(role);
+      if (apiRes && apiRes.success) {
+        State.currentUser.roles = apiRes.roles;
+      } else if (apiRes && !apiRes.success) {
+        showToast(apiRes.message, 'error');
+        return;
+      }
+    }
+
+    if (!State.currentUser.roles.includes(role)) {
+      State.currentUser.roles.push(role);
+    }
+
+    const localIdx = State.users.findIndex(u => u.id === State.currentUser.id);
+    if (localIdx !== -1) {
+      State.users[localIdx].roles = State.currentUser.roles;
+    }
+    saveUsersToStorage();
+
+    closeModal('addRoleModal');
+    showToast(`Successfully added '${role}' role to your account!`, 'success');
+
+    switchActiveRole(role);
+  }
+
+  /** Log out: clear session, return to home */
+  function logoutUser() {
+    State.currentUser = null;
+    State.currentActiveRole = null;
+    try {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+      localStorage.removeItem(STORAGE_KEYS.AUTH_ACTIVE_ROLE);
+    } catch(e) {}
+    updateHeaderUserUI();
+    switchRole('home');
+    showToast('You have been logged out successfully.', 'success');
+  }
+
   // Export public interface for inline event triggers
   window.FoodShareApp = {
     API,
@@ -1778,7 +2356,18 @@
     promptDeleteDonation,
     resetSampleData,
     resetNgoFilters,
-    closeModal
+    closeModal,
+    // Auth & multi-role
+    openAuthModal,
+    handleLogin,
+    handleRegister,
+    openRoleChooser,
+    completeLogin,
+    switchActiveRole,
+    openAddRoleModal,
+    confirmAddRole,
+    logoutUser,
+    updateHeaderUserUI
   };
 
   // Run on DOM ready

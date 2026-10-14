@@ -2,8 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
+const { authenticate } = require('./middleware/authMiddleware');
 const donationRoutes = require('./routes/donationRoutes');
 const statsRoutes = require('./routes/statsRoutes');
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,7 +23,12 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
+// Authentication middleware across all /api routes
+app.use('/api', authenticate);
+
 // API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/donations', donationRoutes);
 app.use('/api/stats', statsRoutes);
 
@@ -28,7 +36,7 @@ app.use('/api/stats', statsRoutes);
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
-    message: 'ServeX FoodShare REST API is operational',
+    message: 'ServeX FoodShare REST API is operational with multi-role support',
     timestamp: new Date().toISOString(),
     uptimeSeconds: Math.floor(process.uptime())
   });
@@ -62,6 +70,8 @@ app.listen(PORT, () => {
   console.log(`🚀 ServeX FoodShare Backend Server running!`);
   console.log(`📍 Web App & API URL : http://localhost:${PORT}`);
   console.log(`📍 Health Check      : http://localhost:${PORT}/api/health`);
+  console.log(`📍 Auth API          : http://localhost:${PORT}/api/auth`);
+  console.log(`📍 Users API         : http://localhost:${PORT}/api/users`);
   console.log(`📍 Donations API     : http://localhost:${PORT}/api/donations`);
   console.log(`📍 Platform Stats    : http://localhost:${PORT}/api/stats`);
   console.log('====================================================');
